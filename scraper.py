@@ -1,9 +1,16 @@
 import time
 import openpyxl
+import os
+import re
+import string
+import subprocess
+
+from datetime import datetime
+
 from openpyxl.worksheet.table import Table, TableStyleInfo
 from openpyxl.utils import get_column_letter
+
 from collections import defaultdict
-import os
 
 from selenium import webdriver
 from selenium.webdriver.common.by import By
@@ -18,7 +25,6 @@ def auto_fit_columns(ws):
         max_length = max(len(str(cell.value or "")) for cell in col_cells)
         ws.column_dimensions[get_column_letter(col_num)].width = max_length + 2
 
-
 def extract_event_rows(driver):
     wait = WebDriverWait(driver, 10)
     rows = driver.find_elements(By.CSS_SELECTOR, "div[onclick*='toggle']")
@@ -29,6 +35,8 @@ def extract_event_rows(driver):
     for row in rows:
         try:
             event_title = row.text.strip()
+            if not is_recent_event(event_title):
+                continue  # ⏩ Skip if not in last 2 calendar years
             driver.execute_script("arguments[0].click();", row)
             time.sleep(0.4)
 
@@ -44,22 +52,33 @@ def extract_event_rows(driver):
                 except:
                     continue
 
-            event_key = event_title.split(":")[1].strip() if ":" in event_title else event_title
+            event_base = event_title.split(":")[1].strip() if ":" in event_title else event_title
+            event_key = re.sub(r"\s*\(\d+\)$", "", event_base)
             event_data[event_key].append(record)
 
         except Exception as e:
             print("⚠️ Skipped a row due to error:", e)
 
     return event_data
-
+def is_recent_event(event_text):
+    """
+    Checks if the event string contains a year within the last 2 calendar years (including current).
+    """
+    current_year = datetime.now().year
+    for year in range(current_year - 1, current_year + 1 + 1):
+        if str(year) in event_text:
+            return True
+    return False
 
 def write_to_excel(grouped_data, filename="blackpug_registrants.xlsx"):
     wb = openpyxl.Workbook()
     wb.remove(wb.active)
 
     for i, (event, records) in enumerate(grouped_data.items()):
+        print(f"✏️ Writing sheet: {event[:30]}...")
         sheet_name = event[:31]
-        ws = wb.create_sheet(title=sheet_name)
+        safe_sheet_name = ''.join(c for c in sheet_name if c in string.ascii_letters + string.digits + " _-")[:31]
+        ws = wb.create_sheet(title=safe_sheet_name)
 
         all_keys = sorted(set().union(*(r.keys() for r in records)))
         ws.append(all_keys)
@@ -69,18 +88,21 @@ def write_to_excel(grouped_data, filename="blackpug_registrants.xlsx"):
 
         end_col = get_column_letter(len(all_keys))
         table_ref = f"A1:{end_col}{len(records) + 1}"
-        table = Table(displayName=f"{sheet_name.replace(' ', '')}Tbl{i+1}", ref=table_ref)
+
+        base_name = ''.join(c for c in safe_sheet_name if c.isalnum())[:25]
+        table_name = f"{base_name}Tbl{i+1}".replace(" ", "")[:31]  # Ensures table name is <=31 chars and safe
+
+        table = Table(displayName=table_name, ref=table_ref)
         style = TableStyleInfo(name="TableStyleMedium9", showFirstColumn=False,
                                showLastColumn=False, showRowStripes=True, showColumnStripes=False)
         table.tableStyleInfo = style
         ws.add_table(table)
 
         auto_fit_columns(ws)
-
+    print("💾 Saving Excel workbook...")
     wb.save(filename)
     print(f"✅ Excel export complete: {filename}")
-
-
+    subprocess.run(["open", filename])
 
 def main():
     event_url = input("🔗 Enter the Black Pug Event URL: ").strip().split("#")[0]
@@ -88,57 +110,54 @@ def main():
         print("❌ Invalid URL format. Must start with http or https.")
         return
 
-    # Set up headless Chrome with flags for macOS/Apple Silicon
     options = Options()
-    options.binary_location = os.path.expanduser("~/Applications/ChromeForTesting/chrome-mac-arm64/Google Chrome for Testing.app/Contents/MacOS/Google Chrome for Testing")
-    # options.add_argument("--headless")
+    options.binary_location = os.path.expanduser(
+        "~/Applications/ChromeForTesting/chrome-mac-arm64/Google Chrome for Testing.app/Contents/MacOS/Google Chrome for Testing"
+    )
     options.add_argument("--no-sandbox")
-    options.add_argument("--disable-dev-shm-usage")
-    options.add_argument("--disable-gpu")
-    options.add_argument("--remote-debugging-port=9222")
     options.add_argument("--window-size=1920,1080")
 
     driver_path = os.path.abspath(os.path.join("drivers", "chromedriver"))
     service = Service(driver_path)
     driver = webdriver.Chrome(service=service, options=options)
 
-
-
     try:
         driver.get(event_url)
-        time.sleep(2)  # Wait for page to settle
+        time.sleep(2)
         input("🔒 Log in to Black Pug in the browser. Then press ENTER to continue...")
         wait = WebDriverWait(driver, 10)
 
-      # Find all dropdowns with class "caret"
+        print("🔄 Locating user menu...")
         user_menus = wait.until(EC.presence_of_all_elements_located((By.CLASS_NAME, "caret")))
 
         if len(user_menus) < 2:
             print("❌ Could not find the user dropdown. Are you logged in?")
             return
 
-        user_menus[1].click()  # Second dropdown is your user menu
+        print("📋 Opening user menu...")
+        user_menus[1].click()
 
-
-        # Click "View Activity"
+        print("📋 Navigating to activity history...")
         view_activity = wait.until(EC.element_to_be_clickable(
             (By.XPATH, "//a[contains(text(), 'View Activity')]")))
         view_activity.click()
 
-        # Wait for the modal to appear
+        print("🔄 Waiting for activity data...")
         wait.until(EC.visibility_of_element_located((By.XPATH,
             "//div[contains(@class,'modal')]//div[contains(text(),'Summer Camp & Activities History')]")))
         time.sleep(1)
 
-        # Scrape data
+        print("📋 Scraping event registrations...")
         grouped_data = extract_event_rows(driver)
+
+        print("📂 Writing data to Excel...")
         write_to_excel(grouped_data)
 
     except Exception as e:
         print("❌ Error during scraping:", e)
     finally:
+        print("🧹 Closing browser...")
         driver.quit()
-
 
 if __name__ == "__main__":
     main()
