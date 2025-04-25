@@ -3,6 +3,7 @@ import openpyxl
 from openpyxl.worksheet.table import Table, TableStyleInfo
 from openpyxl.utils import get_column_letter
 from collections import defaultdict
+import os
 
 from selenium import webdriver
 from selenium.webdriver.common.by import By
@@ -10,7 +11,7 @@ from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.common.exceptions import TimeoutException
-
+from selenium.webdriver.chrome.service import Service
 
 def auto_fit_columns(ws):
     for col_num, col_cells in enumerate(ws.iter_cols(min_row=1, max_row=ws.max_row), 1):
@@ -19,7 +20,6 @@ def auto_fit_columns(ws):
 
 
 def extract_event_rows(driver):
-    # Expand all rows and extract data
     wait = WebDriverWait(driver, 10)
     rows = driver.find_elements(By.CSS_SELECTOR, "div[onclick*='toggle']")
     print(f"📦 Found {len(rows)} registration rows...")
@@ -48,17 +48,17 @@ def extract_event_rows(driver):
             event_data[event_key].append(record)
 
         except Exception as e:
-            print("⚠️ Skipped one row due to error:", e)
+            print("⚠️ Skipped a row due to error:", e)
 
     return event_data
 
 
 def write_to_excel(grouped_data, filename="blackpug_registrants.xlsx"):
     wb = openpyxl.Workbook()
-    wb.remove(wb.active)  # Remove default sheet
+    wb.remove(wb.active)
 
-    for event, records in grouped_data.items():
-        sheet_name = event[:31]  # Excel sheet name limit
+    for i, (event, records) in enumerate(grouped_data.items()):
+        sheet_name = event[:31]
         ws = wb.create_sheet(title=sheet_name)
 
         all_keys = sorted(set().union(*(r.keys() for r in records)))
@@ -67,10 +67,9 @@ def write_to_excel(grouped_data, filename="blackpug_registrants.xlsx"):
         for record in records:
             ws.append([record.get(k, "") for k in all_keys])
 
-        # Add Excel Table
         end_col = get_column_letter(len(all_keys))
         table_ref = f"A1:{end_col}{len(records) + 1}"
-        table = Table(displayName=f"{sheet_name.replace(' ', '')}Tbl", ref=table_ref)
+        table = Table(displayName=f"{sheet_name.replace(' ', '')}Tbl{i+1}", ref=table_ref)
         style = TableStyleInfo(name="TableStyleMedium9", showFirstColumn=False,
                                showLastColumn=False, showRowStripes=True, showColumnStripes=False)
         table.tableStyleInfo = style
@@ -82,42 +81,57 @@ def write_to_excel(grouped_data, filename="blackpug_registrants.xlsx"):
     print(f"✅ Excel export complete: {filename}")
 
 
+
 def main():
-    # Input URL
-    event_url = input("🔗 Enter the Black Pug Event URL: ").strip()
+    event_url = input("🔗 Enter the Black Pug Event URL: ").strip().split("#")[0]
     if not event_url.startswith("http"):
-        print("❌ Invalid URL.")
+        print("❌ Invalid URL format. Must start with http or https.")
         return
 
-    # Headless browser setup
+    # Set up headless Chrome with flags for macOS/Apple Silicon
     options = Options()
-    options.add_argument("--headless")
+    options.binary_location = os.path.expanduser("~/Applications/ChromeForTesting/chrome-mac-arm64/Google Chrome for Testing.app/Contents/MacOS/Google Chrome for Testing")
+    # options.add_argument("--headless")
+    options.add_argument("--no-sandbox")
+    options.add_argument("--disable-dev-shm-usage")
     options.add_argument("--disable-gpu")
-    options.add_argument("--window-size=1920x1080")
-    driver = webdriver.Chrome(options=options)
+    options.add_argument("--remote-debugging-port=9222")
+    options.add_argument("--window-size=1920,1080")
+
+    driver_path = os.path.abspath(os.path.join("drivers", "chromedriver"))
+    service = Service(driver_path)
+    driver = webdriver.Chrome(service=service, options=options)
+
+
 
     try:
         driver.get(event_url)
+        time.sleep(2)  # Wait for page to settle
+        input("🔒 Log in to Black Pug in the browser. Then press ENTER to continue...")
         wait = WebDriverWait(driver, 10)
 
-        # Step 1: Open user dropdown
-        user_menu = wait.until(EC.element_to_be_clickable((By.CLASS_NAME, "caret")))
-        user_menu.click()
+      # Find all dropdowns with class "caret"
+        user_menus = wait.until(EC.presence_of_all_elements_located((By.CLASS_NAME, "caret")))
 
-        # Step 2: Click "View Activity"
+        if len(user_menus) < 2:
+            print("❌ Could not find the user dropdown. Are you logged in?")
+            return
+
+        user_menus[1].click()  # Second dropdown is your user menu
+
+
+        # Click "View Activity"
         view_activity = wait.until(EC.element_to_be_clickable(
             (By.XPATH, "//a[contains(text(), 'View Activity')]")))
         view_activity.click()
 
-        # Step 3: Wait for modal to appear
+        # Wait for the modal to appear
         wait.until(EC.visibility_of_element_located((By.XPATH,
             "//div[contains(@class,'modal')]//div[contains(text(),'Summer Camp & Activities History')]")))
-        time.sleep(1)  # slight buffer
+        time.sleep(1)
 
-        # Step 4: Scrape registrations
+        # Scrape data
         grouped_data = extract_event_rows(driver)
-
-        # Step 5: Export
         write_to_excel(grouped_data)
 
     except Exception as e:

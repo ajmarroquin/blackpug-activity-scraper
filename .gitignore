@@ -1,0 +1,27 @@
+# Ignore Python virtual environment
+scraper/
+venv/
+drivers/
+
+
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Distribution / packaging
+build/
+dist/
+*.egg-info/
+
+# IDE/editor configs
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Mac system files
+.DS_Store
+
+# Excel output files (optional)
+blackpug_registrants.xlsx
