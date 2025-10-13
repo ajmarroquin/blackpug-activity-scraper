@@ -1,17 +1,21 @@
 # 🏕️ Blackpug Activity Scraper
 
-Automate the extraction of registrant data from **Black Pug Software** (used by BSA councils) into clean, structured Excel workbook — grouped by event, filtered by relevance (last two years). Each event's registrants are exported to a separate sheet in a well-formatted `.xlsx` workbook.
+Automate the extraction of registrant data from **Black Pug Software** (used by Scouting America councils). This will export into an excel file with a tab for each event, showing number of current registrants and non-complete registrants.
 ---
 
 ## 🚀 Features
 
 - Pulls down all **event registrations** from your Black Pug account
-- Automatically **groups by event name** (ignores reg IDs)
-- Filters for **recent events only** (within 2 calendar years)
-- Cleans up and formats a readable Excel file with **separate sheets per event**
-- Adds sortable **tables** with styled headers
-- Runs on **macOS M-series** using Chrome for Testing
-
+- Automatically **groups by event name** and removes duplicate registrations
+- **Smart date filtering** with three options:
+  - **Future events**: Events from today forward (based on actual event dates)
+  - **This calendar year's events**: Any events in the current year
+  - **Last year's events**: Events from the previous year
+- **Duplicate cleanup**: Automatically removes people from "not booked" if they appear in "booked" (prevents duplicate entries)
+- Exports clean Excel file with **separate sheets per event**
+- **Professional formatting**: Sortable tables with styled headers, numeric participant counts, and automatic totals
+- **Registration numbers as sortable numbers** for easy filtering and analysis
+- Separates **booked registrations** from **incomplete registrations** on each sheet
 ---
 
 ## ⚙️ Setup Instructions
@@ -55,8 +59,8 @@ python scraper.py
 You'll be prompeted to paste in your event URL like: https://scoutingevent.com/640-CAD25# (we will strip the # or you can paste without it)
 
 ### 6️⃣ Manually Log in and Select Unit
-* A Chrome window will open.
-* Log in to your Black Pug account if needed.
+* A Chrome for testing window will open.
+* Log in to your Black Pug account.
 * Click your user menu in the top right corner.
 * Select your Pack/Troop (e.g. BA Pack ### F) to access your roster.
 * Close the dropdown.
@@ -66,9 +70,30 @@ You'll be prompeted to paste in your event URL like: https://scoutingevent.com/6
 The terminal will show progress updates like:
 ```bash
 📋 Scraping event registrations...
+📊 Fall Cub Activity Day: 32 booked, 0 not booked
+🧹 Removed 4 duplicate registration(s) from 'Spring Camp' not-booked list
+📝 Debug log written to: deduplication_debug_20251013_143022.txt
 ✅ Excel export complete: blackpug_registrants.xlsx
+📁 File saved to: /Users/your-username/path/blackpug_registrants.xlsx
 ```
-The exported file will open automatically!
+
+## 📊 Output Details
+
+### Excel File Structure
+- **One sheet per event** with clean, professional formatting
+- **Event title** at the top of each sheet
+- **Booked registrations table** (people who completed registration)
+- **Not booked registrations table** (people who started but didn't complete - for follow-up)
+- **Automatic totals** for participant counts
+- **Registration numbers as sortable numbers** for easy analysis
+
+### Debug Logging
+The script creates a detailed debug log file showing:
+- Which duplicate registrations were removed and why
+- Email matching logic for verification
+- Before/after counts for each event
+
+This helps you verify the deduplication is working correctly.
 
 ### 🧰 Tested with
 * Python 3.13+
