@@ -1,8 +1,11 @@
-# Ignore Python virtual environment
-scraper/
+# Ignore Python virtual environments
+.venv/
 venv/
-drivers/
+scraper/
+env/
 
+# Selenium Manager local cache (if ever placed in repo)
+drivers/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
@@ -20,8 +23,13 @@ dist/
 *.swp
 *.swo
 
-# Mac system files
+# OS files
 .DS_Store
+Thumbs.db
 
-# Excel output files (optional)
+# Excel output + lock files
 blackpug_registrants.xlsx
+~$*.xlsx
+
+# Debug logs produced by the scraper
+deduplication_debug_*.txt

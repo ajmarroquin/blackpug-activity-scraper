@@ -2,8 +2,10 @@ import time
 import openpyxl
 import os
 import re
+import shutil
 import string
 import subprocess
+import sys
 import traceback
 
 from datetime import datetime
@@ -19,7 +21,101 @@ from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.common.exceptions import TimeoutException, NoSuchElementException, WebDriverException
-from selenium.webdriver.chrome.service import Service
+
+
+def build_driver():
+    """Build a Chrome webdriver using Selenium Manager (cross-platform).
+
+    Selenium >= 4.11 ships with Selenium Manager, which auto-discovers an
+    installed Chrome/Chromium and downloads a matching chromedriver into
+    ~/.cache/selenium. No manual driver setup required on Linux, macOS, or
+    Windows.
+
+    Optional environment variables:
+      CHROME_BINARY  -- absolute path to a specific Chrome/Chromium binary
+                        (e.g. a Chrome for Testing build).
+      HEADLESS=1     -- run in headless mode (note: you log in interactively,
+                        so the default is headed).
+    """
+    options = Options()
+    options.add_argument("--no-sandbox")
+    options.add_argument("--disable-dev-shm-usage")
+    options.add_argument("--disable-gpu")
+    options.add_argument("--window-size=1920,1080")
+    options.add_argument("--disable-web-security")
+    options.add_argument("--allow-running-insecure-content")
+
+    chrome_binary = os.environ.get("CHROME_BINARY")
+    if chrome_binary:
+        chrome_binary = os.path.expanduser(chrome_binary)
+        options.binary_location = chrome_binary
+    else:
+        chrome_binary = _autodetect_chrome_binary()
+        if chrome_binary:
+            options.binary_location = chrome_binary
+
+    _abort_if_snap_chromium(chrome_binary)
+
+    if os.environ.get("HEADLESS") in ("1", "true", "True"):
+        options.add_argument("--headless=new")
+
+    return webdriver.Chrome(options=options)
+
+
+def _autodetect_chrome_binary():
+    """Find a non-snap Chrome/Chromium binary on PATH.
+
+    Selenium Manager will otherwise happily pick up /snap/bin/chromium on
+    Ubuntu, which is sandboxed and silently fails to navigate (browser opens
+    to ``data:,`` and never loads the URL).
+    """
+    candidates = [
+        "google-chrome",
+        "google-chrome-stable",
+        "chromium",
+        "chromium-browser",
+        "chrome",
+    ]
+    for name in candidates:
+        path = shutil.which(name)
+        if path and "/snap/" not in os.path.realpath(path):
+            return path
+    return None
+
+
+def _abort_if_snap_chromium(binary_path):
+    """Hard-fail with a clear message if we're about to launch snap Chromium."""
+    if not binary_path:
+        # Let Selenium Manager try; if it picks snap chromium we can't tell here.
+        # Check the default snap path explicitly.
+        snap_path = "/snap/bin/chromium"
+        if os.path.exists(snap_path) and not shutil.which("google-chrome") \
+                and not shutil.which("google-chrome-stable"):
+            _print_snap_error()
+            sys.exit(1)
+        return
+
+    real = os.path.realpath(binary_path)
+    if "/snap/" in real:
+        _print_snap_error(real)
+        sys.exit(1)
+
+
+def _print_snap_error(path=""):
+    print("=" * 70)
+    print("❌ Snap-confined Chromium detected" + (f" at {path}" if path else ""))
+    print("=" * 70)
+    print("Snap Chromium is sandboxed and cannot be driven by Selenium —")
+    print("the browser opens to 'data:,' and never navigates.")
+    print()
+    print("Fix (recommended): install the official Google Chrome .deb:")
+    print("  wget https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb")
+    print("  sudo apt install ./google-chrome-stable_current_amd64.deb")
+    print()
+    print("Or download Chrome for Testing and set CHROME_BINARY:")
+    print("  https://googlechromelabs.github.io/chrome-for-testing/")
+    print("  export CHROME_BINARY=/path/to/chrome")
+    print("=" * 70)
 
 def auto_fit_columns(ws):
     for col_num, col_cells in enumerate(ws.iter_cols(min_row=1, max_row=ws.max_row), 1):
@@ -278,6 +374,12 @@ def write_to_excel(grouped_data, filename="blackpug_registrants.xlsx"):
         sheet_name = event[:31]
         safe_sheet_name = ''.join(c for c in sheet_name if c in string.ascii_letters + string.digits + " _-")[:31]
         ws = wb.create_sheet(title=safe_sheet_name)
+
+        # Sanitized base used for unique Excel table display names (must be
+        # alphanumeric, <=15 chars to leave room for suffixes). Computed up
+        # front so both the booked and not-booked sections can reference it
+        # safely even when an event has only one of the two sections.
+        base_name = ''.join(c for c in safe_sheet_name if c.isalnum())[:15] or "Event"
         
         # Add event name as header - but don't let it affect column widths
         ws.cell(row=1, column=1, value=f"Event: {event}")
@@ -335,7 +437,6 @@ def write_to_excel(grouped_data, filename="blackpug_registrants.xlsx"):
             table_ref = f"A{header_row}:{end_col}{table_end_row}"
             
             # Generate unique table name
-            base_name = ''.join(c for c in safe_sheet_name if c.isalnum())[:15]
             table_name = f"{base_name}Booked{i+1}"
             counter = 1
             original_table_name = table_name
@@ -459,20 +560,7 @@ def main():
         else:
             print("❌ Invalid choice. Please enter 1, 2, or 3.")
 
-    options = Options()
-    options.binary_location = os.path.expanduser(
-        "~/Applications/ChromeForTesting/chrome-mac-arm64/Google Chrome for Testing.app/Contents/MacOS/Google Chrome for Testing"
-    )
-    options.add_argument("--no-sandbox")
-    options.add_argument("--disable-dev-shm-usage")
-    options.add_argument("--disable-gpu")
-    options.add_argument("--window-size=1920,1080")
-    options.add_argument("--disable-web-security")
-    options.add_argument("--allow-running-insecure-content")
-
-    driver_path = os.path.abspath(os.path.join("drivers", "chromedriver"))
-    service = Service(driver_path)
-    driver = webdriver.Chrome(service=service, options=options)
+    driver = build_driver()
 
     try:
         driver.get(event_url)

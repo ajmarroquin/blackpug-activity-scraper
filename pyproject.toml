@@ -1,0 +1,14 @@
+[project]
+name = "blackpug-activity-scraper"
+version = "0.2.0"
+description = "Scrape registrant data from Black Pug Software (Scouting America council events) into Excel."
+readme = "readme.md"
+requires-python = ">=3.10"
+license = { file = "LICENSE" }
+dependencies = [
+    "selenium>=4.15.0",
+    "openpyxl>=3.1.2",
+]
+
+[project.scripts]
+blackpug-scraper = "scraper:main"
