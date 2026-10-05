@@ -1,4 +1,4 @@
-import { BOOKMARKLET_SOURCE } from "./bookmarklet-source.js";
+import { BOOKMARKLET_FUNCTION } from "./bookmarklet-source.js";
 import { FILTERS, groupRegistrations, totalParticipants } from "./lib/registrations.js";
 import { buildWorkbook } from "./lib/workbook.js";
 
@@ -9,7 +9,12 @@ const $ = (id) => document.getElementById(id);
 
 function showLanding() {
   const link = $("bookmarklet");
-  const code = BOOKMARKLET_SOURCE.replace("__APP_ORIGIN__", location.origin);
+  // The folder this page is served from: "/" on Vercel or locally,
+  // "/blackpug-activity-scraper/" on GitHub Pages
+  const appUrl = new URL("./", location.href).href;
+  // A javascript: URL must evaluate to undefined, or the browser replaces the
+  // page with the result. Hence the void.
+  const code = `void (${BOOKMARKLET_FUNCTION})(${JSON.stringify(appUrl)},${JSON.stringify(location.origin)})`;
   link.href = `javascript:${encodeURIComponent(code)}`;
   link.addEventListener("click", (event) => {
     event.preventDefault();

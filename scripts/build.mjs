@@ -2,7 +2,7 @@
 //
 //   web/*                      -> dist/*
 //   exceljs.min.js             -> dist/vendor/exceljs.min.js  (served from our own origin)
-//   web/bookmarklet.js         -> dist/bookmarklet-source.js  (minified, exported as a string)
+//   web/bookmarklet.js         -> dist/bookmarklet-source.js  (minified function, exported as a string)
 import { cp, mkdir, readFile, rm, writeFile } from "node:fs/promises";
 import { createRequire } from "node:module";
 import { dirname, join } from "node:path";
@@ -26,24 +26,22 @@ await cp(
   join(dist, "vendor", "exceljs.min.js"),
 );
 
-// A bookmarklet is a javascript: URL, so it has to be one compact expression,
-// and it must evaluate to undefined or the browser replaces the page with the
-// result. Hence no negate_iife and the leading void.
-// The app page swaps __APP_ORIGIN__ for its own origin at runtime, so the same
-// build works on preview URLs, production, or a custom domain.
+// The bookmarklet ships as a minified function declaration. The app page
+// calls it with its own URL and origin at runtime (see app.js), so the same
+// build works locally, on GitHub Pages, on Vercel, or on a custom domain.
+// Top-level names and function arguments survive minification by default.
 const source = await readFile(join(web, "bookmarklet.js"), "utf8");
-const minified = await minify(source, {
-  compress: { passes: 2, negate_iife: false },
+const { code } = await minify(source, {
+  compress: { passes: 2 },
   mangle: true,
   format: { comments: false },
 });
-const code = `void ${minified.code}`;
-if (!code.includes("__APP_ORIGIN__")) {
-  throw new Error("bookmarklet lost its __APP_ORIGIN__ placeholder during minification");
+if (!/^function blackpugExport\([a-z],[a-z]\)\{/.test(code) || !code.endsWith("}")) {
+  throw new Error(`unexpected minified bookmarklet shape: ${code.slice(0, 60)}…`);
 }
 await writeFile(
   join(dist, "bookmarklet-source.js"),
-  `export const BOOKMARKLET_SOURCE = ${JSON.stringify(code)};\n`,
+  `export const BOOKMARKLET_FUNCTION = ${JSON.stringify(code)};\n`,
 );
 
 console.log(`Built dist/ (bookmarklet is ${code.length} characters)`);

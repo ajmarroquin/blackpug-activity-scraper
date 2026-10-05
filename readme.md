@@ -39,13 +39,17 @@ The browser version is a static site in `web/`: a landing page with a drag-to-bo
 
 **Limits.** It needs a desktop browser (Chrome, Edge, Firefox or Safari), since bookmarks like this are awkward on phones. It also depends on Black Pug's page layout, just like the Python script. If they change it, update `web/bookmarklet.js` and `tests/fixtures/blackpug-page.html`.
 
-### Deploy your own copy (Vercel free plan)
+### Deploy your own copy (GitHub Pages, free)
 
-1. Go to [vercel.com/new](https://vercel.com/new) and import this GitHub repository.
-2. Leave the settings alone. `vercel.json` already sets the build command (`npm run build`), the output folder (`dist`) and the security headers.
-3. Click **Deploy** and share the URL. Each push to the main branch redeploys it.
+The live site is published from this repo with GitHub Pages at `https://ajmarroquin.github.io/blackpug-activity-scraper/`. To publish your own copy, fork the repo and then:
 
-The Hobby (free) plan covers personal, non-commercial use, which fits a volunteer tool like this. It's static hosting with no functions, so there's nothing to meter.
+1. In the repo, go to **Settings → Pages**. Under **Build and deployment**, set **Source** to **GitHub Actions**.
+2. Push to `main`, or run the **Deploy to GitHub Pages** workflow from the **Actions** tab. `.github/workflows/pages.yml` installs, runs the tests, builds, and publishes `dist/`. The tests have to pass before anything goes live.
+3. Share the URL shown on the workflow run. The bookmark works from any URL, so a fork's copy points at the fork's own site.
+
+GitHub Pages can't send custom response headers, so the page carries its security policy in a `<meta>` tag instead. That policy still blocks all network requests from the page.
+
+**Vercel works too.** Import the repo at [vercel.com/new](https://vercel.com/new) and click **Deploy**. `vercel.json` sets the build, the output folder and the same policy as real headers, plus protection against being framed by other sites. The Hobby plan is free for personal, non-commercial use.
 
 ### Working on the browser version
 

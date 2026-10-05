@@ -21,10 +21,15 @@ export async function vercelHeaders() {
   return Object.fromEntries(config.headers.flatMap((rule) => rule.headers.map((h) => [h.key, h.value])));
 }
 
-export function startServer({ dir, port = 0, headers = {} }) {
+// base mounts dir under a subpath, the way GitHub Pages serves a project site
+export function startServer({ dir, port = 0, headers = {}, base = "/" }) {
   const server = createServer(async (req, res) => {
     const { pathname } = new URL(req.url, "http://localhost");
-    let file = normalize(join(dir, decodeURIComponent(pathname)));
+    if (!pathname.startsWith(base)) {
+      res.writeHead(404, headers).end("Not found");
+      return;
+    }
+    let file = normalize(join(dir, decodeURIComponent(pathname.slice(base.length))));
     if (!file.startsWith(dir)) {
       res.writeHead(403).end();
       return;

@@ -4,8 +4,10 @@
 // tab, and hands the rows to it with postMessage, addressed to that page's
 // origin only. Nothing is sent to any server.
 //
-// The build minifies this file; the app page substitutes __APP_ORIGIN__.
-(function (APP_ORIGIN) {
+// The build minifies this function and the app page wraps it into the
+// javascript: URL, calling it with the folder the app is served from (a
+// subpath on GitHub Pages) and the app's origin.
+function blackpugExport(APP_URL, APP_ORIGIN) {
   "use strict";
 
   var ROW_SELECTOR = "div[onclick*='toggle']";
@@ -87,7 +89,7 @@
     return out;
   }
 
-  var popup = window.open(APP_ORIGIN + "/?receive", MESSAGE);
+  var popup = window.open(APP_URL + "?receive", MESSAGE);
   if (!popup) {
     alert("Your browser blocked the export tab. Allow pop-ups for this site, then click the bookmark again.");
     return;
@@ -112,4 +114,4 @@
     });
   };
   window.addEventListener("message", window.__blackpugExportListener);
-})("__APP_ORIGIN__");
+}
