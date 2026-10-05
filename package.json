@@ -10,7 +10,7 @@
   },
   "scripts": {
     "build": "node scripts/build.mjs",
-    "test": "npm run build && node --test \"tests/**/*.test.js\"",
+    "test": "npm run build && node --test tests/*.test.js",
     "serve": "npm run build && node scripts/serve.mjs"
   },
   "dependencies": {
