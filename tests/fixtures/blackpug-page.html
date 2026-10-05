@@ -1,0 +1,138 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Fake Black Pug event page (test fixture)</title>
+  <!--
+    A stand-in for scoutingevent.com's "View Activity" modal, built from the
+    selectors scraper.py relies on:
+      row      div[onclick*='toggle'] whose text is "<date>: <event> (<reg #>)"
+      details  the next sibling div, holding div.col-xs-12.col-sm-6 fields with
+               a .col-xs-4 label and a .col-xs-8 value
+    All names and emails are made up. If Black Pug changes their markup, update
+    this file to match and the e2e test will show what broke.
+
+    ?closed      the modal starts hidden and authentication.activity() opens it
+    ?logged-out  no rows and no authentication object
+  -->
+  <style>
+    .modal { border: 1px solid #ccc; padding: 12px; max-width: 900px; }
+    .row::after { content: ""; display: table; clear: both; }
+    .col-sm-6 { float: left; width: 50%; }
+    .col-xs-4 { float: left; width: 33%; font-weight: bold; }
+    .col-xs-8 { float: left; width: 66%; }
+    .activity-row { font-weight: bold; padding: 6px 0; cursor: pointer; }
+  </style>
+  <script>
+    function toggleDetails(row) {
+      var details = row.nextElementSibling;
+      if (details.hasAttribute("data-lazy") && !details.children.length) {
+        details.innerHTML =
+          '<div class="row">' +
+          '<div class="col-xs-12 col-sm-6"><div class="col-xs-4">Booked On</div><div class="col-xs-8">Jan 15, 2026 at 06:30 PM</div></div>' +
+          '<div class="col-xs-12 col-sm-6"><div class="col-xs-4">Participants</div><div class="col-xs-8">1</div></div>' +
+          '<div class="col-xs-12 col-sm-6"><div class="col-xs-4">Contact Name</div><div class="col-xs-8">Sam Sample</div></div>' +
+          '<div class="col-xs-12 col-sm-6"><div class="col-xs-4">Email</div><div class="col-xs-8">sam@example.com</div></div>' +
+          "</div>";
+      }
+      details.style.display = details.style.display === "none" ? "" : "none";
+    }
+  </script>
+</head>
+<body>
+  <div id="activity-modal" class="modal">
+    <h4 class="modal-title">Example Pack 000 F Activity</h4>
+    <ul class="nav nav-tabs">
+      <li class="active"><a href="#summer">Summer Camp &amp; Activities</a></li>
+      <li><a href="#yearround">Year Round Camping</a></li>
+    </ul>
+    <div class="tab-content">
+      <div class="tab-pane active" id="summer">
+        <div>Summer Camp &amp; Activities History</div>
+
+        <div class="activity-row" onclick="toggleDetails(this)"><span class="glyphicon glyphicon-edit"></span> Oct 17, 2026: Fall Cub Activity Day &amp; Family Fun Weekend 2026 - Fall Cub Activity Day (6405450292)</div>
+        <div>
+          <div class="row">
+            <div class="col-xs-12 col-sm-6"><div class="col-xs-4">Booked On</div><div class="col-xs-8">Oct 03, 2026 at 09:57 AM</div></div>
+            <div class="col-xs-12 col-sm-6"><div class="col-xs-4">Participants</div><div class="col-xs-8">2</div></div>
+            <div class="col-xs-12 col-sm-6"><div class="col-xs-4">Contact Name</div><div class="col-xs-8">Pat Example</div></div>
+            <div class="col-xs-12 col-sm-6"><div class="col-xs-4">Email</div><div class="col-xs-8">pat@example.com</div></div>
+            <div class="col-xs-12 col-sm-6"><div class="col-xs-4">Balance Due</div><div class="col-xs-8">0.00</div></div>
+          </div>
+        </div>
+
+        <!-- collapsed: details are in the page but hidden -->
+        <div class="activity-row" onclick="toggleDetails(this)"><span class="glyphicon glyphicon-edit"></span> Oct 17, 2026: Fall Cub Activity Day &amp; Family Fun Weekend 2026 - Fall Cub Activity Day (6405439904)</div>
+        <div style="display: none">
+          <div class="row">
+            <div class="col-xs-12 col-sm-6"><div class="col-xs-4">Booked On</div><div class="col-xs-8">Sep 29, 2026 at 11:46 PM</div></div>
+            <div class="col-xs-12 col-sm-6"><div class="col-xs-4">Participants</div><div class="col-xs-8">4</div></div>
+            <div class="col-xs-12 col-sm-6"><div class="col-xs-4">Contact Name</div><div class="col-xs-8">Sam Sample</div></div>
+            <div class="col-xs-12 col-sm-6"><div class="col-xs-4">Email</div><div class="col-xs-8">sam@example.com</div></div>
+            <div class="col-xs-12 col-sm-6"><div class="col-xs-4">Balance Due</div><div class="col-xs-8">0.00</div></div>
+          </div>
+        </div>
+
+        <div class="activity-row" onclick="toggleDetails(this)"><span class="glyphicon glyphicon-edit"></span> Oct 17, 2026: Not Booked Fall Cub Activity Day &amp; Family Fun Weekend 2026 - Fall Cub Activity Day (6405400001)</div>
+        <div>
+          <div class="row">
+            <div class="col-xs-12 col-sm-6"><div class="col-xs-4">Started On</div><div class="col-xs-8">Sep 20, 2026 at 08:00 PM</div></div>
+            <div class="col-xs-12 col-sm-6"><div class="col-xs-4">Participants</div><div class="col-xs-8">2</div></div>
+            <div class="col-xs-12 col-sm-6"><div class="col-xs-4">Contact Name</div><div class="col-xs-8">Pat Example</div></div>
+            <div class="col-xs-12 col-sm-6"><div class="col-xs-4">Email</div><div class="col-xs-8">PAT@Example.com</div></div>
+          </div>
+        </div>
+
+        <div class="activity-row" onclick="toggleDetails(this)"><span class="glyphicon glyphicon-edit"></span> Oct 17, 2026: Not Booked Fall Cub Activity Day &amp; Family Fun Weekend 2026 - Fall Cub Activity Day (6405400002)</div>
+        <div>
+          <div class="row">
+            <div class="col-xs-12 col-sm-6"><div class="col-xs-4">Started On</div><div class="col-xs-8">Sep 21, 2026 at 07:15 PM</div></div>
+            <div class="col-xs-12 col-sm-6"><div class="col-xs-4">Participants</div><div class="col-xs-8">3</div></div>
+            <div class="col-xs-12 col-sm-6"><div class="col-xs-4">Contact Name</div><div class="col-xs-8">Lee Placeholder</div></div>
+            <div class="col-xs-12 col-sm-6"><div class="col-xs-4">Email</div><div class="col-xs-8">lee@example.com</div></div>
+          </div>
+        </div>
+
+        <!-- lazy: details only appear once the row is clicked -->
+        <div class="activity-row" onclick="toggleDetails(this)"><span class="glyphicon glyphicon-edit"></span> Mar 07, 2026: 2026 Spring Camporee (6401111111)</div>
+        <div data-lazy style="display: none"></div>
+
+        <div class="activity-row" onclick="toggleDetails(this)"><span class="glyphicon glyphicon-edit"></span> Jun 12, 2025: Summer Day Camp 2025 (6309999999)</div>
+        <div>
+          <div class="row">
+            <div class="col-xs-12 col-sm-6"><div class="col-xs-4">Booked On</div><div class="col-xs-8">Apr 02, 2025 at 12:00 PM</div></div>
+            <div class="col-xs-12 col-sm-6"><div class="col-xs-4">Participants</div><div class="col-xs-8">3</div></div>
+            <div class="col-xs-12 col-sm-6"><div class="col-xs-4">Contact Name</div><div class="col-xs-8">Lee Placeholder</div></div>
+            <div class="col-xs-12 col-sm-6"><div class="col-xs-4">Email</div><div class="col-xs-8">lee@example.com</div></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- hidden tab: scraper.py never reads these, so neither should the bookmarklet -->
+      <div class="tab-pane" id="yearround" style="display: none">
+        <div class="activity-row" onclick="toggleDetails(this)">Oct 20, 2026: Campsite Reservation (6408888888)</div>
+        <div>
+          <div class="row">
+            <div class="col-xs-12 col-sm-6"><div class="col-xs-4">Participants</div><div class="col-xs-8">9</div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    var params = new URLSearchParams(location.search);
+    var modal = document.getElementById("activity-modal");
+    if (params.has("logged-out")) {
+      modal.remove();
+    } else {
+      window.authentication = {
+        activity: function () {
+          setTimeout(function () { modal.style.display = ""; }, 300);
+        },
+      };
+      if (params.has("closed")) modal.style.display = "none";
+    }
+  </script>
+</body>
+</html>

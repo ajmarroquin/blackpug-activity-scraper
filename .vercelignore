@@ -1,0 +1,4 @@
+# The site is built from web/ by `npm run build`; the Python script isn't deployed.
+scraper.py
+requirements.txt
+pyproject.toml

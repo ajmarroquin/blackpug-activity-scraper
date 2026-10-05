@@ -33,3 +33,5 @@ blackpug_registrants.xlsx
 
 # Debug logs produced by the scraper
 deduplication_debug_*.txt
+node_modules/
+dist/
