@@ -44,7 +44,7 @@ The browser version is a static site in `web/`: a landing page with a drag-to-bo
 The live site is published from this repo with GitHub Pages at `https://ajmarroquin.github.io/blackpug-activity-scraper/`. To publish your own copy, fork the repo and then:
 
 1. In the repo, go to **Settings → Pages**. Under **Build and deployment**, set **Source** to **GitHub Actions**.
-2. Push to `main`, or run the **Deploy to GitHub Pages** workflow from the **Actions** tab. `.github/workflows/pages.yml` installs, runs the tests, builds, and publishes `dist/`. The tests have to pass before anything goes live.
+2. Push to `main`, or run the **Deploy to GitHub Pages** workflow from the **Actions** tab. `.github/workflows/pages.yml` installs, runs the tests, builds, and publishes `dist/`. The tests have to pass before anything goes live, and pull requests run the same tests without publishing.
 3. Share the URL shown on the workflow run. The bookmark works from any URL, so a fork's copy points at the fork's own site.
 
 GitHub Pages can't send custom response headers, so the page carries its security policy in a `<meta>` tag instead. That policy still blocks all network requests from the page.
