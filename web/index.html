@@ -1,0 +1,110 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Black Pug Registrant Export</title>
+  <meta name="description" content="Export your unit's Black Pug event registrations to Excel, right from your browser. Nothing to install.">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%231f4e8c'/%3E%3Cpath d='M9 8h14v3H9zm0 6.5h14v3H9zM9 21h9v3H9z' fill='%23fff'/%3E%3C/svg%3E">
+  <link rel="stylesheet" href="styles.css">
+  <script type="module" src="app.js"></script>
+</head>
+<body>
+  <main class="page">
+
+    <!-- Shown on a normal visit: how to install and use the bookmark -->
+    <section id="landing" class="view">
+      <header class="hero">
+        <h1>Black Pug Registrant Export</h1>
+        <p class="lede">Export your unit's event registrations from Black Pug to an Excel file: one tab per event, with booked and unfinished registrations listed separately. It runs in your browser, so there's nothing to install.</p>
+      </header>
+
+      <ol class="steps">
+        <li>
+          <h2>Add the button to your bookmarks bar</h2>
+          <p>Drag this button onto your bookmarks bar. If you don't see the bar, press <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>B</kbd> (<kbd>⌘</kbd>+<kbd>Shift</kbd>+<kbd>B</kbd> on a Mac).</p>
+          <p class="bookmarklet-row">
+            <a id="bookmarklet" class="bookmarklet" href="#" draggable="true">Export from Black Pug</a>
+            <span id="bookmarklet-hint" class="hint" hidden>Drag it to your bookmarks bar. Clicking it here won't do anything.</span>
+          </p>
+        </li>
+        <li>
+          <h2>Log in to Black Pug and pick your unit</h2>
+          <p>Open your council's event page (for example <code>scoutingevent.com/640-…</code>) and log in. Click your name in the top right and pick your Pack or Troop.</p>
+        </li>
+        <li>
+          <h2>Click the bookmark</h2>
+          <p>A new tab opens with a summary of your events. Pick a date range and download the Excel file.</p>
+        </li>
+      </ol>
+
+      <section class="note">
+        <h2>Your data stays on your computer</h2>
+        <p>The bookmark reads the registration list already on your screen and hands it to this page inside your browser. Your Black Pug password and your registrants' names and emails never go to a server. This page has no server code, and its security settings block it from connecting to other sites.</p>
+      </section>
+
+      <details class="help">
+        <summary>Troubleshooting</summary>
+        <dl>
+          <dt>Nothing happens when I click the bookmark</dt>
+          <dd>Your browser may have blocked the new tab. Allow pop-ups for scoutingevent.com, then click the bookmark again.</dd>
+          <dt>"No registrations found"</dt>
+          <dd>Make sure you're logged in and have picked your unit from the user menu. You can also open <em>View Activity</em> yourself before clicking the bookmark.</dd>
+          <dt>Can I use it on my phone?</dt>
+          <dd>Not easily. Phone browsers make bookmarks like this hard to use. Use Chrome, Edge, Firefox or Safari on a computer.</dd>
+          <dt>Something looks wrong in the spreadsheet</dt>
+          <dd>Black Pug may have changed their page. <a href="https://github.com/ajmarroquin/blackpug-activity-scraper/issues">Open an issue</a> and say what you expected to see. Please don't include anyone's personal details.</dd>
+        </dl>
+      </details>
+    </section>
+
+    <!-- Shown when the bookmark opens this page and sends the rows -->
+    <section id="export" class="view" hidden>
+      <header class="hero">
+        <h1>Your registrations</h1>
+        <p id="status" class="lede" role="status">Waiting for data from your Black Pug tab…</p>
+      </header>
+
+      <div id="export-body" hidden>
+        <fieldset class="filters">
+          <legend>Which events?</legend>
+          <label><input type="radio" name="filter" value="future"> <span>Future events <small id="future-label"></small></span></label>
+          <label><input type="radio" name="filter" value="current_year" checked> <span>This year <small id="current-year-label"></small></span></label>
+          <label><input type="radio" name="filter" value="last_year"> <span>Last year <small id="last-year-label"></small></span></label>
+        </fieldset>
+
+        <div class="table-wrap">
+          <table id="summary" class="summary">
+            <thead>
+              <tr>
+                <th scope="col">Event</th>
+                <th scope="col" class="num">Booked</th>
+                <th scope="col" class="num">Participants</th>
+                <th scope="col" class="num">Not booked</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+        <p id="empty" class="empty" hidden>No events in this date range.</p>
+
+        <details id="duplicates" class="help" hidden>
+          <summary id="duplicates-summary"></summary>
+          <p>These people started a second registration they didn't finish, but they're already booked for that event, so they're left off the not-booked list.</p>
+          <ul id="duplicates-list"></ul>
+        </details>
+
+        <p class="actions">
+          <button id="download" type="button" class="primary">Download Excel</button>
+        </p>
+      </div>
+
+      <p id="error" class="error" role="alert" hidden></p>
+    </section>
+
+    <footer class="footer">
+      <p>Not affiliated with Black Pug Software or Scouting America. <a href="https://github.com/ajmarroquin/blackpug-activity-scraper">Source on GitHub</a>.</p>
+    </footer>
+  </main>
+</body>
+</html>

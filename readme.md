@@ -18,9 +18,56 @@ Automate the extraction of registrant data from **Black Pug Software** (used by 
 - **Professional formatting**: Sortable tables, styled headers, numeric participant counts, automatic totals
 - Separates **booked registrations** from **incomplete registrations**
 
+There are two ways to use it:
+
+- **In your browser (no install):** a bookmark you click while you're on Black Pug. Best for sharing with other leaders. See [Browser version](#-browser-version-no-install).
+- **Python script:** the original version. It drives Chrome with Selenium, so you need Python and some setup. See [Setup](#setup) below.
+
+Both produce the same workbook layout.
+
 ---
 
-## ⚙️ Setup
+## 🌐 Browser version (no install)
+
+The browser version is a static site in `web/`: a landing page with a drag-to-bookmarks-bar button, and an export page.
+
+1. Drag **Export from Black Pug** from the site to your bookmarks bar.
+2. Log in on your council's Black Pug event page and pick your Pack or Troop from the user menu.
+3. Click the bookmark. A new tab opens with a summary of your events. Pick a date range and click **Download Excel**.
+
+**How it works.** The bookmark runs inside your logged-in Black Pug tab. It reads the rows in the *View Activity* list (opening the list if needed) and opens the export page. It then passes the rows to that page with `postMessage`, addressed only to the export page's origin. The export page builds the workbook in the browser with [ExcelJS](https://github.com/exceljs/exceljs), served from the same site. Nothing gets uploaded. The site has no server code, and its Content-Security-Policy (`connect-src 'none'`) blocks it from making network requests.
+
+**Limits.** It needs a desktop browser (Chrome, Edge, Firefox or Safari), since bookmarks like this are awkward on phones. It also depends on Black Pug's page layout, just like the Python script. If they change it, update `web/bookmarklet.js` and `tests/fixtures/blackpug-page.html`.
+
+### Deploy your own copy (Vercel free plan)
+
+1. Go to [vercel.com/new](https://vercel.com/new) and import this GitHub repository.
+2. Leave the settings alone. `vercel.json` already sets the build command (`npm run build`), the output folder (`dist`) and the security headers.
+3. Click **Deploy** and share the URL. Each push to the main branch redeploys it.
+
+The Hobby (free) plan covers personal, non-commercial use, which fits a volunteer tool like this. It's static hosting with no functions, so there's nothing to meter.
+
+### Working on the browser version
+
+```bash
+npm install
+npm test          # builds, then runs unit tests and a Playwright end-to-end test
+npm run serve     # builds and serves dist/ at http://127.0.0.1:4173 with the production headers
+```
+
+| Path | What it is |
+|------|------------|
+| `web/bookmarklet.js` | Runs on the Black Pug page and reads the activity rows. Minified into the bookmark at build time. |
+| `web/lib/registrations.js` | Date filters, grouping and duplicate cleanup (the port of `extract_event_rows`). |
+| `web/lib/workbook.js` | Workbook layout (the port of `write_to_excel`). |
+| `web/app.js`, `web/index.html` | Landing page and export page. |
+| `tests/fixtures/blackpug-page.html` | A fake Black Pug activity list with made-up people, used by the end-to-end test. |
+
+The end-to-end test needs Playwright's Chromium (`npx playwright install chromium` if you don't have it).
+
+---
+
+## ⚙️ Setup<a id="setup"></a>
 
 ### Prerequisites
 
